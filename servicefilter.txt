@@ -1,0 +1,525 @@
+let getCurrentResourceDataFilter = async (exp, location, technology) => {
+  let currentDate = moment().format("YYYY-MM-DD");
+  let exp_query = [];
+  if (exp) {
+    switch (exp) {
+      case "0-1":
+        const date = moment().subtract(1, "years").format("YYYY-MM-DD");
+        exp_query.push(date,currentDate);
+        break;
+      case "1-2":
+        const date1 = moment()
+          .subtract(1, "years")
+          .format("YYYY-MM-DD");
+        const date2 = moment()
+          .subtract(2, "years")
+          .format("YYYY-MM-DD");
+        exp_query.push(date2,date1);
+        break;
+      case "2-3":
+        const date3 = moment()
+          .subtract(2, "years")
+          .format("YYYY-MM-DD HH:mm:SS");
+        const date4 = moment()
+          .subtract(3, "years")
+          .format("YYYY-MM-DD HH:mm:SS");
+        exp_query.push(
+          `email.resources.exp_date BETWEEN '${date4}' and '${date3}'`
+        );
+      case "3":
+        const date5 = moment().subtract(3, "years");
+        exp_query.push(`email.resources.exp_date <= '${date5}'`);
+    }
+  }
+
+  const condition=[]
+  if(exp){
+    condition.push({exp_date:{[Op.between]:exp_query}})
+  }else if(location){
+    condition.push({resident_address:location})
+  }else if(technology){
+    const data=await db.technologies.findOne({where:{technology:technology}})
+    condition.push(data.id)
+  }
+  let resData=null
+  if(technology){
+    const resdata = await db.resources.findAll({
+        where:{[Op.and]:[condition[0],{deleted:0}]},
+      attributes: [
+        "fname",
+        "lname",
+        "id",
+        "resident_address",
+        "exp_date",
+        "language",
+        "otherlanguage",
+        "email",
+        "phone",
+        "resume",
+        "resume_type",
+        "created_at",
+        "on_bench",
+      ],
+
+    include: [
+        {
+          model: db.technologies,
+          where:{[Op.and]:[{id:condition[0]},{deleted:0}]},
+          as: "languages",
+          attributes: ["id", "technology"],
+          on: {
+            col1: db.sequelize.where(
+              db.sequelize.fn(
+                "FIND_IN_SET",
+                db.sequelize.col("languages.id"),
+                db.sequelize.col("resources.language")
+              ),
+              ">",
+              0
+            ),
+          },
+        },
+
+        {
+          model: db.technologies,
+          as: "otherlanguages",
+          attributes: ["id", "technology"],
+          on: {
+            col1: db.sequelize.where(
+              db.sequelize.fn(
+                "FIND_IN_SET",
+                db.sequelize.col("otherlanguages.id"),
+                db.sequelize.col("resources.otherlanguage")
+              ),
+              ">",
+              0
+            ),
+          },
+          required: false,
+        },
+      ],
+      
+    });
+    resData=resdata
+}else{
+    const resdata = await db.resources.findAll({
+        where:{[Op.and]:[condition[0],{deleted:0}]},
+      attributes: [
+        "fname",
+        "lname",
+        "id",
+        "resident_address",
+        "exp_date",
+        "language",
+        "otherlanguage",
+        "email",
+        "phone",
+        "resume",
+        "resume_type",
+        "created_at",
+        "on_bench",
+        "deleted"
+      ],
+
+    include: [
+        {
+          model: db.technologies,
+          as: "languages",
+          attributes: ["id", "technology"],
+          on: {
+            col1: db.sequelize.where(
+              db.sequelize.fn(
+                "FIND_IN_SET",
+                db.sequelize.col("languages.id"),
+                db.sequelize.col("resources.language")
+              ),
+              ">",
+              0
+            ),
+          },
+          // required: false,
+        },
+
+        {
+          model: db.technologies,
+          as: "otherlanguages",
+          attributes: ["id", "technology"],
+          on: {
+            col1: db.sequelize.where(
+              db.sequelize.fn(
+                "FIND_IN_SET",
+                db.sequelize.col("otherlanguages.id"),
+                db.sequelize.col("resources.otherlanguage")
+              ),
+              ">",
+              0
+            ),
+          },
+          required: false,
+        },
+      ],
+      
+    });
+    resData=resdata
+}
+
+  let resData1 = resData.reduce((acc, o) => {
+    const queryResult = acc.find((qr) => qr.id == o.dataValues.id);
+
+    if (queryResult) {
+      if (
+        queryResult.languages &&
+        !queryResult.languages.some(
+          (item) =>
+            item.technology === o.dataValues.languages.dataValues.technology
+        )
+      ) {
+        queryResult.languages.push(o.dataValues.languages.dataValues);
+      }
+
+      if (
+        queryResult.otherlanguages &&
+        !queryResult.otherlanguages.some(
+          (item) =>
+            item.technology ===
+            o.dataValues.otherlanguages.dataValues.technology
+        )
+      ) {
+        queryResult.otherlanguages.push(
+          o.dataValues.otherlanguages.dataValues
+        );
+      }
+    } else {
+      if (o.dataValues.languages) {
+        const language = [{ ...o.dataValues.languages.dataValues }];
+        o.dataValues.languages = [...language];
+      }
+
+      if (o.dataValues.otherlanguages) {
+        const otherlanguage = [{ ...o.dataValues.otherlanguages.dataValues }];
+        o.dataValues.otherlanguages = [...otherlanguage];
+      }
+
+      let newQR = { ...o.dataValues };
+      acc.push(newQR);
+    }
+
+    return acc;
+  }, []);
+
+  let arrayList = [];
+
+  for (let ele of resData1) {
+    let currentResource = { ...ele };
+
+    const fullName = `${currentResource.fname} ${currentResource.lname}`;
+
+    currentResource.name =
+      fullName.length > 17 ? `${fullName.substring(0, 15)}...` : fullName;
+
+    currentResource.whatsappNo = currentResource.phone
+      ? currentResource.phone
+          .replace(" ", "")
+          .replace("+91", "")
+          .replace("0", "")
+      : "";
+
+    if (currentResource.whatsappNo.length == 10) {
+      currentResource.whatsappNo = `https:/api.whatsapp.com:/send?phone=+91${currentResource.whatsappNo}&text=Hi ${currentResource.name},`;
+    } else {
+      currentResource.whatsappNo = "";
+    }
+
+    // if (
+    //   (currentResource.resume =
+    //     "https://drive.google.com" || "https://docs.google.com")
+    // ) {
+    //   currentResource.resume = currentResource.resume;
+    // } else {
+    //   currentResource.resume = "NA";
+    // }
+    if (
+      !currentResource.resume ||
+      currentResource.resume == undefined ||
+      currentResource.resume == null
+    ) {
+      currentResource.resume = "NA";
+    }
+
+    if (currentResource.exp_date != "0000-00-00") {
+      const date1 = moment();
+      const date2 = moment(new Date(currentResource.exp_date));
+
+      currentResource.exp_date = date1.diff(date2, "years").month =
+        date1.diff(date2, "months");
+    } else {
+      currentResource.exp_date = "NA";
+    }
+    if (
+      currentResource.end_date == null &&
+      currentResource.nonjoiningEndDate == null
+    ) {
+      //for(let i=0;i<currentResource.length;i++) {
+      const interviewDetails = await successRatio(currentResource.id);
+
+      currentResource.interviewCount =interviewDetails.interviewCount
+      currentResource.interviewSelected=interviewDetails.interviewSelected
+      
+      let todayDate = moment();
+      let createdDate = moment(new Date(currentResource.created_at));
+
+      currentResource.idleDays = todayDate.diff(createdDate, "days");
+    }
+    arrayList.push(currentResource);
+  }
+  //res.send(arrayList);
+
+  //Sorting as per max idle days
+  for (let i = 0; i < arrayList.length; i++) {
+    for (let j = i; j > 0; j--) {
+      if (arrayList[j]["idleDays"] > arrayList[j - 1]["idleDays"]) {
+        let tempData = arrayList[j];
+        arrayList[j] = arrayList[j - 1];
+        arrayList[j - 1] = tempData;
+      }
+    }
+  }
+return arrayList;
+
+//   let currentDate = moment().format("YYYY-MM-DD");
+//   let exp_query = [];
+//   let experience_query = "";
+//   console.log(typeof (exp));
+//   if (exp) {
+//       switch (exp) {
+//         case "0-1":
+//           const date = moment().subtract(1, "years").format("YYYY-MM-DD");
+//           exp_query.push(
+//             `email.resources.exp_date BETWEEN '${currentDate}' and '${date}'`
+//           );
+//           break;
+//         case "1-2":
+//           const date1 = moment()
+//             .subtract(1, "years")
+//             .format("YYYY-MM-DD HH:mm:SS");
+//           const date2 = moment()
+//             .subtract(2, "years")
+//             .format("YYYY-MM-DD HH:mm:SS");
+//           exp_query.push(
+//             `email.resources.exp_date BETWEEN '${date2}' and '${date1}'`
+//           );
+//           break;
+//         case "2-3":
+//           const date3 = moment()
+//             .subtract(2, "years")
+//             .format("YYYY-MM-DD HH:mm:SS");
+//           const date4 = moment()
+//             .subtract(3, "years")
+//             .format("YYYY-MM-DD HH:mm:SS");
+//           exp_query.push(
+//             `email.resources.exp_date BETWEEN '${date4}' and '${date3}'`
+//           );
+//         case "3":
+//           const date5 = moment().subtract(3, "years");
+//           exp_query.push(`email.resources.exp_date <= '${date5}'`);
+//       }
+
+//     experience_query = "AND (" + exp_query.join(" OR ") + ")";
+//   }
+//   const resourceData = await sequelize.query(
+//     `select email.resources.fname, email.resources.lname, email.resources.id as resourcesId, email.resources.resident_address, 
+//     email.resources.exp_date, email.resources.language, email.resources.otherlanguage, email.resources.email, email.resources.phone, 
+//     email.resources.resume, email.joinings.end_date as end_date, email.nonjoinings.end_date as nonjoiningEndDate, email.resources.created_at, 
+//     email.resources.on_bench, email.joinings.deleted, email.joinings.id as joiningsid from email.resources 
+//     left join email.joinings on email.joinings.resource_id = email.resources.id 
+//     left join email.nonjoinings on email.nonjoinings.joining_id = email.joinings.id 
+//     where ((email.resources.deleted = 0 and email.joinings.id = (SELECT MAX(t1.id) 
+//     FROM email.joinings t1 WHERE t1.resource_id = email.joinings.resource_id)) OR email.joinings.resource_id IS NULL) 
+//     and email.resources.deleted = 0 and resident_address like '%${location}%' 
+//     or language like '%${technology}%' ${experience_query == "" ? "" : `${experience_query}`
+//     } group by email.resources.id order by email.joinings.resource_id`
+//   );
+//   // AND resident_address like '%${location}%' AND language like '%${technology}%' ${experience_query == '' ? '' : `${experience_query}`}
+// return resourceData
+//   if (resourceData.length > 0) {
+//     const resData = await models.resources.findAll({
+//       // where: searchQuery,
+
+//       attributes: [
+//         "id",
+//         "fname",
+//         "lname",
+//         "phone",
+//         "exp_date",
+//         "resident_address",
+//         "email",
+//         "resume",
+//         "resume_type",
+//         "created_at",
+//       ],
+
+//       include: [
+//         {
+//           model: models.technologies,
+//           as: "languages",
+//           attributes: ["id", "technology"],
+//           on: {
+//             col1: sequelize.where(
+//               sequelize.fn(
+//                 "FIND_IN_SET",
+//                 sequelize.col("languages.id"),
+//                 sequelize.col("resources.language")
+//               ),
+//               ">",
+//               0
+//             ),
+//           },
+//           required: false,
+//         },
+
+//         {
+//           model: models.technologies,
+//           as: "otherlanguages",
+//           attributes: ["id", "technology"],
+//           on: {
+//             col1: sequelize.where(
+//               sequelize.fn(
+//                 "FIND_IN_SET",
+//                 sequelize.col("otherlanguages.id"),
+//                 sequelize.col("resources.otherlanguage")
+//               ),
+//               ">",
+//               0
+//             ),
+//           },
+//           required: false,
+//         },
+//       ],
+//     });
+
+//     let resData1 = resData.reduce((acc, o) => {
+//       const queryResult = acc.find((qr) => qr.id == o.dataValues.id);
+
+//       if (queryResult) {
+//         if (
+//           queryResult.languages &&
+//           !queryResult.languages.some(
+//             (item) =>
+//               item.technology === o.dataValues.languages.dataValues.technology
+//           )
+//         ) {
+//           queryResult.languages.push(o.dataValues.languages.dataValues);
+//         }
+
+//         if (
+//           queryResult.otherlanguages &&
+//           !queryResult.otherlanguages.some(
+//             (item) =>
+//               item.technology ===
+//               o.dataValues.otherlanguages.dataValues.technology
+//           )
+//         ) {
+//           queryResult.otherlanguages.push(
+//             o.dataValues.otherlanguages.dataValues
+//           );
+//         }
+//       } else {
+//         if (o.dataValues.languages) {
+//           const language = [{ ...o.dataValues.languages.dataValues }];
+//           o.dataValues.languages = [...language];
+//         }
+
+//         if (o.dataValues.otherlanguages) {
+//           const otherlanguage = [{ ...o.dataValues.otherlanguages.dataValues }];
+//           o.dataValues.otherlanguages = [...otherlanguage];
+//         }
+
+//         let newQR = { ...o.dataValues };
+//         acc.push(newQR);
+//       }
+
+//       return acc;
+//     }, []);
+
+//     let arrayList = [];
+
+//     for (let ele of resData1) {
+//       let currentResource = { ...ele };
+
+//       const fullName = `${currentResource.fname} ${currentResource.lname}`;
+
+//       currentResource.name =
+//         fullName.length > 17 ? `${fullName.substring(0, 15)}...` : fullName;
+
+//       currentResource.whatsappNo = currentResource.phone
+//         ? currentResource.phone
+//           .replace(" ", "")
+//           .replace("+91", "")
+//           .replace("0", "")
+//         : "";
+
+//       if (currentResource.whatsappNo.length == 10) {
+//         currentResource.whatsappNo = `https:/api.whatsapp.com:/send?phone=+91${currentResource.whatsappNo}&text=Hi ${currentResource.name},`;
+//       } else {
+//         currentResource.whatsappNo = "";
+//       }
+
+//       // if (
+//       //   (currentResource.resume =
+//       //     "https://drive.google.com" || "https://docs.google.com")
+//       // ) {
+//       //   currentResource.resume = currentResource.resume;
+//       // } else {
+//       //   currentResource.resume = "NA";
+//       // }
+//       if (!currentResource.resume || currentResource.resume == undefined || currentResource.resume == null) {
+//         currentResource.resume = 'NA'
+//       }
+
+//       if (currentResource.exp_date != "0000-00-00") {
+//         const date1 = moment();
+//         const date2 = moment(new Date(currentResource.exp_date));
+
+//         currentResource.exp_date = date1.diff(date2, "years").month =
+//           date1.diff(date2, "months");
+//       } else {
+//         currentResource.exp_date = "NA";
+//       }
+
+//       if (
+//         currentResource.end_date == null &&
+//         currentResource.nonjoiningEndDate == null
+//       ) {
+//         const interviewDetails = await successRatio(currentResource.id);
+
+//         currentResource.interviewCount =
+//           interviewDetails.interviewTotal.length > 0
+//             ? interviewDetails.interviewTotal[0].dataValues.interviewCount
+//             : 0;
+//         currentResource.interviewSelectedCount =
+//           interviewDetails.interviewSelected > 0
+//             ? interviewDetails.interviewSelected[0].dataValues
+//               .interviewSelectedCount
+//             : 0;
+
+//         let todayDate = moment();
+//         let createdDate = moment(new Date(currentResource.created_at));
+
+//         currentResource.idleDays = todayDate.diff(createdDate, "days");
+//       }
+//       arrayList.push(currentResource);
+//     }
+
+//     //Sorting as per max idle days
+//     for (let i = 0; i < arrayList.length; i++) {
+//       for (let j = i; j > 0; j--) {
+//         if (arrayList[j]["idleDays"] > arrayList[j - 1]["idleDays"]) {
+//           let tempData = arrayList[j];
+//           arrayList[j] = arrayList[j - 1];
+//           arrayList[j - 1] = tempData;
+//         }
+//       }
+//     }
+//   }
+  //return arrayList
+}

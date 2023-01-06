@@ -1,0 +1,22 @@
+var http=require('http');
+var fs=require('fs');
+var url=require('url'); // importing required modules
+http.createServer(function(req,res){ // creating server
+    var pathname=url.parse(req.url).pathname; //parse the fetched url to get pathname
+    console.log("Request for" + pathname + "received");
+    fs.readFile(pathname.substr(1),function(err,data){
+        if(err){
+            console.log(err);
+            res.writeHead(404,{'Content-type':'text/html'});
+        }else{
+            res.writeHead(200,{'Content-type':'text/html'});
+            res.write(data.toString());
+            
+        }
+        res.end();
+
+    });
+
+}).listen(21);
+console.log("server running at localhost 20");
+

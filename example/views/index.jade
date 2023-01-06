@@ -1,0 +1,29 @@
+
+      form(method="POST",action='/new_contact')
+      input(type="hidden",name="_method",value="PUT")
+      
+         p Name:
+         input(type="text",name="name")
+         p Phone:
+         input(type="text",name="phone")
+         p 
+         input(type="submit") Add New Contact 
+
+    h1 Add New Database 
+    form(method="POST",action="/createdb")
+       p Database name:
+        input#title(type="text",name="dbname")
+        p:button(type="submit") Add New Database 
+
+    h1 Enter Phone nUmber to delete new_contact 
+    form(method="POST" ,action="/delete_contact")
+    p Phone No.: 
+    input#title(type="text",name="phone")
+    p:button(type="submit")Delete Contact 
+
+    h1 View Specific Contact 
+    form(method="POST" ,action="/view_contact")
+    p Phone No.: 
+    input#title(type="text",name="phone")
+    p:button(type="submit") Search Contact
+

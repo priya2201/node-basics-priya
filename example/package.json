@@ -2,7 +2,7 @@
   "name": "example",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,14 +10,14 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.20.0",
-    "error": "^10.4.0",
-    "errorhandler": "^1.5.1",
+    "error-handler": "^1.0.0",
+    "error-handlers": "^1.0.11",
     "express": "^4.18.1",
     "express-session": "^1.17.3",
-    "handlers": "^1.0.3",
-    "jade": "^1.11.0",
+    "jade": "^0.29.0",
     "json": "^11.0.0",
     "logger": "^0.0.1",
+    "method-override": "^3.0.0",
     "nano": "^10.0.0",
     "serve-favicon": "^2.5.0",
     "url": "^0.11.0"

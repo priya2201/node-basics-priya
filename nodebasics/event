@@ -1,0 +1,11 @@
+var fs=require('fs'); //Import file system module
+var event=require('events'); //import events module
+const myEmitter=new event.EventEmitter();///creating object of EventEmitter
+fs.readFile('firstexample.txt',(err,data)=>{
+    console.log(data.toString());
+    myEmitter.emit('readFile');
+    
+});//Emitting event
+myEmitter.on('readFile',()=>{
+    console.log('\n Read Event Occured');
+}); //registering listener and defining event handler
