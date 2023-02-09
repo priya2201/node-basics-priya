@@ -1,0 +1,1 @@
+here are event emitter which create and handle custom events and commonly evvents are data-for reading data,end-data not available, error- for handling errors read or write that error,finish- data is flushed there is no use of underlying system

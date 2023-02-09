@@ -1,0 +1,6 @@
+Streams are the objects that facilitate you to read data from source and write file to destination
+there are 4 types of Streams
+-> readable
+-> writable
+-> duplex
+-> transform

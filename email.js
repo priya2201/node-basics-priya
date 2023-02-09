@@ -1,14 +1,20 @@
+var cron=require('node-cron');
 var nodemailer = require('nodemailer');
 var transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: 'priyamurpani99@gmail.com',
-      pass: 'smileyarr1'
+      pass: 'snce sjvv fanm plbs'
     }
   });
+  cron.schedule('5 * * * *',function(){
+    console.log('----------------');
+    console.log('Running cron job')
+
+  })
   var mailOptions = {
-    from: 'priyamurpani99@mail.co',
-    to: 'priyamurpani@nimapinfotechn.com',
+    from: 'priyamurpani99@mail.com',
+    to: 'priyamurpani@nimapinfotech.com',
     subject: 'Sending Email using Node.js',
     text: 'That was easy!'
   };

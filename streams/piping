@@ -1,0 +1,15 @@
+let fs=require('fs');
+let readerStream=fs.createReadStream('input.txt');
+let writerStream=fs.createWriteStream('output1.txt')
+//pipe the read and write operations
+// read input.txt and write data to output1.txt
+readerStream.pipe(writerStream);
+readerStream.on('finish',function(){
+    console.log('Input data is reading and then output1 is writiing that data of input');
+
+})
+writerStream.on('finish',function(){
+    console.log('Input data is reading and then output1 is writiing that data of input');
+
+})
+console.log('program ended!')
