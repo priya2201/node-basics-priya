@@ -1,0 +1,8 @@
+let fs=require('fs');
+console.log('file is  there');
+fs.open('input1.txt','wx+',function(err,fd){
+    if(err){
+        return console.error(err);
+    }
+    console.log(' opened?')
+})

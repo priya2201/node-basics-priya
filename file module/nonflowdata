@@ -1,0 +1,7 @@
+let fs=require('fs');
+let readerStream=fs.createReadStream('./input.txt');
+
+setTimeout(()=>{
+    const data=readerStream.read(13);
+    console.log(data);
+})

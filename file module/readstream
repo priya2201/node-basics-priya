@@ -1,0 +1,10 @@
+let fs=require('fs');
+let readerStream=fs.createReadStream('input.txt');
+readerStream.on('data',chunk=>{
+    console.log('--------------------');
+    console.log(chunk);
+    console.log('--------------------');
+});
+readerStream.on('open',()=>{
+    console.log('stream opened')
+})

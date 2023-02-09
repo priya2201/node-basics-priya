@@ -1,0 +1,16 @@
+follwowing is methos to get file info
+fs.stat(path,cb)
+path = file name
+cb= 2 arguments(err,stats) where stats is an object of fs.Stats type
+Streams work on a concept called buffer.
+
+A buffer is a temporary memory that a stream takes to hold some data until it is consumed.
+
+In a stream, the buffer size is decided by the highWatermark property on the stream instance which is a number denoting the size of the buffer in bytes.
+
+A buffer memory in Node by default works on String and Buffer. We can also make the buffer memory work on JavaScript objects. To do so, we need to set the property objectMode on the stream object to true.
+
+If we try to push some data into the stream, the data is pushed into the stream buffer. The pushed data sits in the buffer until the data is consumed.
+
+If the buffer is full and we try to push data to a stream, the stream does not accept that data and returns with a false value for the push action.
+
